@@ -8,10 +8,10 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Command
 from odoo.tests import Form
 
-from odoo.addons.base.tests.common import BaseCommon
+from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 
 
-class TestPaymentReturn(BaseCommon):
+class TestPaymentReturn(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -36,6 +36,26 @@ class TestPaymentReturn(BaseCommon):
                 "default_expense_partner_id": cls.partner_expense.id,
             }
         )
+        cls.outstanding_receipt_account = cls.env["account.account"].create(
+            {
+                "name": "Outstanding Receipts",
+                "code": "OUTRCPT",
+                "account_type": "asset_current",
+            }
+        )
+        cls.outstanding_payment_account = cls.env["account.account"].create(
+            {
+                "name": "Outstanding Payments",
+                "code": "OUTPAY",
+                "account_type": "liability_current",
+            }
+        )
+        cls.bank_journal.inbound_payment_method_line_ids.payment_account_id = (
+            cls.outstanding_receipt_account
+        )
+        cls.bank_journal.outbound_payment_method_line_ids.payment_account_id = (
+            cls.outstanding_payment_account
+        )
         cls.account_income = cls.env["account.account"].create(
             {
                 "name": "Test income account",
@@ -43,7 +63,15 @@ class TestPaymentReturn(BaseCommon):
                 "account_type": "income_other",
             }
         )
-        cls.partner = cls.env["res.partner"].create({"name": "Test"})
+        cls.partner = cls.env["res.partner"].create(
+            {
+                "name": "Test",
+                "property_account_receivable_id": cls.account.id,
+                "property_account_payable_id": cls.company_data[
+                    "default_account_payable"
+                ].id,
+            }
+        )
         cls.invoice = cls.env["account.move"].create(
             {
                 "move_type": "out_invoice",
