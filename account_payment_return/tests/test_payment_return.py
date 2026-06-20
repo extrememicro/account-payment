@@ -56,6 +56,9 @@ class TestPaymentReturn(AccountTestInvoicingCommon):
         cls.bank_journal.outbound_payment_method_line_ids.payment_account_id = (
             cls.outstanding_payment_account
         )
+        cls.inbound_payment_method_line = (
+            cls.bank_journal.inbound_payment_method_line_ids[:1]
+        )
         cls.account_income = cls.env["account.account"].create(
             {
                 "name": "Test income account",
@@ -115,6 +118,7 @@ class TestPaymentReturn(AccountTestInvoicingCommon):
         cls.payment_return = cls.env["payment.return"].create(
             {
                 "journal_id": cls.bank_journal.id,
+                "payment_method_line_id": cls.inbound_payment_method_line.id,
                 "line_ids": [
                     Command.create(
                         {
@@ -244,7 +248,11 @@ class TestPaymentReturn(AccountTestInvoicingCommon):
         self.payment_return.action_confirm()
         with self.assertRaises(ValidationError):
             self.payment_return = self.env["payment.return"].create(
-                {"journal_id": self.bank_journal.id, "line_ids": [(0, 0, line_vals)]}
+                {
+                    "journal_id": self.bank_journal.id,
+                    "payment_method_line_id": self.inbound_payment_method_line.id,
+                    "line_ids": [(0, 0, line_vals)],
+                }
             )
 
     def test_payments_widget(self):
